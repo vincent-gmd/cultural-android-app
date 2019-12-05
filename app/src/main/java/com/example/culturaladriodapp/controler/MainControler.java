@@ -12,6 +12,7 @@ import com.example.culturaladriodapp.model.dto.api.Artist;
 import com.example.culturaladriodapp.model.dto.api.LegalEntity;
 import com.example.culturaladriodapp.model.dto.api.LoginDto;
 import com.example.culturaladriodapp.model.dto.api.Person;
+import com.example.culturaladriodapp.model.dto.api.UserDto;
 import com.example.culturaladriodapp.view.CadastraActivity;
 import com.example.culturaladriodapp.view.ListArtistaActivity;
 import com.example.culturaladriodapp.view.MainActivity;
@@ -20,6 +21,8 @@ import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 
 import java.io.UnsupportedEncodingException;
+import java.sql.SQLException;
+import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.StringEntity;
@@ -112,14 +115,16 @@ public class MainControler {
                     Gson gson = new Gson();
 
                     //Conversão direta
-                    Person person = gson.fromJson(okJson, Artist.class);
-                    if (person != null) {
-                        if (person.getSubTypeId() == 1969736551) {
-                            Artist artist = (Artist) person;
-                            loguinSucess(artist);
+                    Person person= null;
+                    UserDto u = gson.fromJson(okJson, UserDto.class);
+                    Artist user=u.getUser();
+                    if (user != null) {
+                        if (user.getSubTypeId() == 1969736551||true) {
+                            Artist artist = (Artist) user;
+                            loguinSucess(artist,loginDto);
                         } else {
                             LegalEntity legalEntity = (LegalEntity) person;
-                            loguinSucess(legalEntity);
+                            loguinSucess(legalEntity,loginDto);
                         }
                     } else {
                         Toast.makeText(activity, "person null not ok", Toast.LENGTH_SHORT).show();
@@ -127,6 +132,8 @@ public class MainControler {
                 }catch (Exception e){
                     e.printStackTrace();
                 }
+                habilitarForm();
+                limparDados();
             }
             @Override
             public void onRetry(int retryNo) {
@@ -136,11 +143,7 @@ public class MainControler {
 
             @Override
             public void onFailure(int i, Header[] headers, byte[] bytes, Throwable throwable) {
-                if(loguinOfline(loginDto)){
-
-                }else{
-                    habilitarForm();
-                    limparDados();
+                if(!loguinOfline(loginDto)){
                     Toast.makeText(activity, "loguin failure", Toast.LENGTH_SHORT).show();
                 }
 
@@ -149,21 +152,45 @@ public class MainControler {
 
     }
     private boolean loguinOfline(LoginDto loginDto){
-
-        Intent it = new Intent(activity, ListArtistaActivity.class);
-        it.putExtra("online",false);
-        activity.startActivity(it);
-        return false;
+        LoginDto loginDtoDb=null;
+        try {
+            loginDtoDb= loginDao.getDao().queryForId(loginDto.getEmailOrRegistration());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        boolean loginOK;
+        if(loginOK=(loginDtoDb!=null&&loginDtoDb.getPassword().equals(loginDto.getPassword()))){
+            Intent it = new Intent(activity, ListArtistaActivity.class);
+            it.putExtra("online",false);
+            activity.startActivity(it);
+            Toast.makeText(activity, "loguin ofline", Toast.LENGTH_SHORT).show();
+        }
+        habilitarForm();
+        limparDados();
+        return loginOK;
 
     }
+    private void updateLoguin(LoginDto loginDto){
+        List<LoginDto> loguins=null;
+        try {
+            loguins= loginDao.getDao().queryForAll();
+            loginDao.getDao().delete(loguins);
+            loginDao.getDao().create(loginDto);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    private void loguinSucess(Artist artist, LoginDto loginDto) {
+        updateLoguin(loginDto);
 
-    private void loguinSucess(Artist artist) {
         Toast.makeText(activity, "loguin sucess artist", Toast.LENGTH_SHORT).show();
         Intent it = new Intent(activity, ListArtistaActivity.class);
         it.putExtra("online",true);
         activity.startActivity(it);
     }
-    private void loguinSucess(LegalEntity legalEntity) {
+    private void loguinSucess(LegalEntity legalEntity, LoginDto loginDto) {
+        updateLoguin(loginDto);
+
         Toast.makeText(activity, "loguin sucess legal", Toast.LENGTH_SHORT).show();
         Intent it = new Intent(activity, ListArtistaActivity.class);
         it.putExtra("online",true);
