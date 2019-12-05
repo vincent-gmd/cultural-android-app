@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Cultural Adriod App</string>
+    <string name="nome">Nome</string>
+    <string name="senha">Senha</string>
+    <string name="cadastrar">cadastrar</string>
+    <string name="voltar_para_loguin">voltar para loguin</string>
+    <string name="email">Email</string>
+    <string name="loguin">loguin</string>
+    <string name="cpf">cpf</string>
+    <string name="nome">Nome</string>
+    <string name="nome_da_pessoa">NOME DA PESSOA</string>
+    <string name="email_email_com">email@email.com</string>
+    <string name="artist">artist</string>
 </resources>
